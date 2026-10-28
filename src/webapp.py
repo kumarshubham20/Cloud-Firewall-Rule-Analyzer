@@ -8,177 +8,132 @@ from analyzer import analyze_rules, write_html_report, write_report
 PAGE = r"""<!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#0b1220">
-<title>Sentinel | Cloud Firewall Analyzer</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#08111f"><title>Sentinel Security | Firewall Analyzer</title>
 <style>
-:root{color-scheme:dark;--bg:#0b1220;--surface:#111c2f;--surface2:#16243a;--line:#263750;--text:#edf4ff;--muted:#9bacc5;--blue:#6ea8fe;--cyan:#5eead4;--red:#f87171;--amber:#fbbf24;--green:#34d399}
-*{box-sizing:border-box}
-body{margin:0;background:radial-gradient(ellipse at 10% 0%,#162746 0,transparent 36%),var(--bg);color:var(--text);font:15px/1.55 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
-button,textarea{font:inherit}
-.topbar{border-bottom:1px solid var(--line);background:#0b1220e8;backdrop-filter:blur(12px)}
-.topinner{max-width:1280px;margin:auto;padding:18px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px}
-.brand{display:flex;align-items:center;gap:12px}.logo{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#4f8cff,#5eead4);display:grid;place-items:center;color:#081324;font-weight:900;font-size:19px;box-shadow:0 8px 28px #4f8cff30}
-.brandname{font-size:17px;font-weight:800;letter-spacing:-.3px}.brandtag{font-size:12px;color:var(--muted)}
-.statuspill{border:1px solid #236c5c;background:#0d2a2a;color:#8df2d7;padding:7px 11px;border-radius:999px;font-size:12px;white-space:nowrap}
-main{max-width:1280px;margin:0 auto;padding:34px 28px 48px}
-.eyebrow{color:var(--cyan);text-transform:uppercase;letter-spacing:1.8px;font-size:11px;font-weight:800}
-.hero{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:28px}
-h1{font-size:clamp(28px,3vw,40px);line-height:1.12;letter-spacing:-1.2px;margin:9px 0 12px}
-.lead{color:var(--muted);max-width:700px;margin:0}
-.hero-note{border:1px solid var(--line);border-radius:14px;padding:13px 16px;background:#111c2f;min-width:180px}
-.hero-note strong{display:block;font-size:13px}.hero-note span{font-size:12px;color:var(--muted)}
-.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:18px}
-.card{background:linear-gradient(145deg,#121e31,#101a2b);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 14px 34px #00000014;min-width:0}
-.inputcard{grid-column:span 7}.guidecard{grid-column:span 5}.summarycard,.findingscard,.validationcard{grid-column:1/-1}
-.sectionhead{display:flex;align-items:flex-start;gap:12px;margin-bottom:16px}
-.step{width:32px;height:32px;border:1px solid #33517a;background:#172b48;color:#9bc4ff;border-radius:10px;display:grid;place-items:center;font-weight:800;flex-shrink:0}
-h2{font-size:17px;letter-spacing:-.25px;margin:1px 0 4px}.sub{color:var(--muted);font-size:13px;margin:0}
-textarea{display:block;width:100%;min-height:238px;resize:vertical;background:#091322;border:1px solid #30425c;border-radius:12px;color:#d9e8ff;padding:15px;font:13px/1.7 "Cascadia Code",Consolas,monospace;outline:none;tab-size:2}
-textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px #6ea8fe20}
-.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
-button{border:1px solid transparent;border-radius:10px;padding:10px 15px;font-weight:750;font-size:13px;cursor:pointer;transition:transform .15s,filter .15s}
-button:hover{filter:brightness(1.08);transform:translateY(-1px)}button:focus-visible{outline:3px solid #6ea8fe88;outline-offset:2px}
-.primary{background:linear-gradient(135deg,#6ea8fe,#7dd3fc);color:#081426}.secondary{background:#18263b;color:#dbe8fb;border-color:#30425c}.tertiary{background:transparent;color:#9fb4d0;border-color:#30425c}
-.message{min-height:22px;font-size:13px;margin:13px 0 0;color:var(--muted)}.message.success{color:var(--green)}.message.error{color:var(--red)}
-.guide-list{display:grid;gap:12px;margin-top:16px}
-.guideitem{display:flex;gap:11px;align-items:flex-start;padding:12px;border:1px solid #273a54;background:#0d1829;border-radius:12px}
-.guideicon{width:30px;height:30px;display:grid;place-items:center;border-radius:9px;background:#172b48;color:#83b6ff;flex-shrink:0;font-weight:800}
-.guideitem strong{display:block;font-size:13px;margin-bottom:2px}.guideitem span{display:block;color:var(--muted);font-size:12px}
-.summarygrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
-.stat{padding:16px;border-radius:13px;background:#0c1728;border:1px solid #243650}
-.statlabel{color:var(--muted);font-size:12px;display:flex;align-items:center;gap:7px}
-.dot{width:7px;height:7px;border-radius:50%;background:#6ea8fe}.stat b{display:block;font-size:29px;line-height:1.3;margin-top:7px;letter-spacing:-.8px}
-.stat.risk b{color:var(--red)}.stat.warn b{color:var(--amber)}.stat.safe b{color:var(--green)}
-.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
-table{border-collapse:collapse;width:100%;min-width:790px;font-size:13px}
-th{background:#17253b;color:#b9cbe4;text-transform:uppercase;letter-spacing:.6px;font-size:10px;font-weight:800}
-th,td{padding:13px 14px;border-bottom:1px solid #263750;text-align:left;vertical-align:top}
-tbody tr:last-child td{border-bottom:0}tbody tr:hover{background:#17243a80}
-.severity{display:inline-block;border-radius:6px;padding:4px 8px;font-size:10px;font-weight:900;letter-spacing:.5px}
-.HIGH{background:#421f2b;color:#ffaaa9}.MEDIUM{background:#3c3018;color:#fbd27c}.INFO{background:#172d4a;color:#9ac5ff}
-.score{font-weight:850;font-variant-numeric:tabular-nums}.empty{color:var(--muted);text-align:center;padding:24px}
-.validation-list{margin:0;padding:0;list-style:none;display:grid;gap:8px}
-.validation-list li{border:1px solid #263750;background:#0c1728;padding:11px 13px;border-radius:10px;font-size:13px}
-.validation-list .error{color:#ffaaa9;border-color:#663040}.validation-list .success{color:#82e6c2;border-color:#245b4e}
-.foot{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;color:#7f92ad;font-size:12px;margin-top:22px;padding:0 2px}
-kbd{font:11px ui-monospace,monospace;border:1px solid #344761;border-radius:5px;padding:2px 5px;color:#c3d4eb}
-@media(max-width:900px){.inputcard,.guidecard{grid-column:1/-1}.summarygrid{grid-template-columns:repeat(3,minmax(0,1fr))}.hero{align-items:flex-start;flex-direction:column}.hero-note{width:100%}}
-@media(max-width:520px){.topinner{padding:14px 16px}main{padding:24px 14px 32px}.card{padding:16px}.summarygrid{grid-template-columns:repeat(2,minmax(0,1fr))}.stat b{font-size:25px}.brandname{font-size:14px}.brandtag{font-size:11px}.statuspill{font-size:10px;padding:6px 8px}}
+:root{color-scheme:dark;--bg:#08111f;--panel:#101c2e;--panel2:#14243a;--line:#263a55;--text:#edf4ff;--muted:#9aadc7;--blue:#76aaff;--cyan:#5eead4;--red:#fb7185;--amber:#fbbf24;--green:#4adea6}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.55 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+button,textarea{font:inherit}button{cursor:pointer;transition:.16s ease}button:hover{filter:brightness(1.12);transform:translateY(-1px)}button:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+.layout{min-height:100vh}.sidebar{position:fixed;inset:0 auto 0 0;width:236px;background:#091321;border-right:1px solid var(--line);padding:23px 15px;display:flex;flex-direction:column;z-index:3}
+.brand{display:flex;align-items:center;gap:11px;padding:0 8px 27px}.brandmark{width:39px;height:39px;border-radius:12px;background:linear-gradient(135deg,#79aaff,#5eead4);display:grid;place-items:center;color:#061426;font-size:19px;font-weight:950;box-shadow:0 7px 22px #4d94ff2b}.brand strong{font-size:14px;letter-spacing:.5px}.brand small{display:block;color:var(--muted);font-size:11px}
+.navlabel{color:#627792;font-size:10px;font-weight:850;letter-spacing:1.6px;padding:13px 11px 8px}.nav{display:grid;gap:5px}.nav a{display:flex;gap:11px;align-items:center;text-decoration:none;color:#9fb1ca;padding:11px 12px;border-radius:10px;font-size:13px;border:1px solid transparent}.nav a:hover,.nav a.active{background:#15263d;color:#eaf3ff;border-color:#29415f}.navicon{width:22px;text-align:center;color:#83b6ff;font-size:15px}.sidebottom{margin-top:auto;border:1px solid var(--line);background:#101d30;border-radius:12px;padding:13px}.sidebottom b{font-size:12px;display:block}.sidebottom p{font-size:11px;color:var(--muted);margin:5px 0 0}
+.main{margin-left:236px;min-width:0}.topbar{height:68px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 clamp(20px,3vw,46px);background:#0a1423d9;position:sticky;top:0;z-index:2;backdrop-filter:blur(14px)}.crumb{font-size:12px;color:var(--muted)}.crumb b{color:var(--text);font-weight:700}.topright{display:flex;align-items:center;gap:12px}.live{display:flex;align-items:center;gap:7px;border:1px solid #245c50;background:#0d2927;color:#8ef1d5;border-radius:99px;padding:7px 11px;font-size:10px;font-weight:850;letter-spacing:.5px}.live i{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
+.content{max-width:1550px;margin:auto;padding:32px clamp(20px,3vw,46px) 44px}.hero{display:flex;justify-content:space-between;align-items:flex-end;gap:25px;margin-bottom:25px}.eyebrow{color:var(--cyan);font-size:10px;font-weight:900;letter-spacing:2px;text-transform:uppercase}h1{font-size:clamp(29px,3vw,42px);line-height:1.12;letter-spacing:-1.5px;margin:9px 0 11px}.lead{max-width:750px;color:var(--muted);margin:0;font-size:14px}.heroactions{display:flex;gap:9px;flex-wrap:wrap}.btn{border:1px solid #314761;background:#182941;color:#e1edff;border-radius:10px;padding:10px 13px;font-size:12px;font-weight:800}.btn.primary{background:linear-gradient(130deg,#7daeff,#68d9db);border:0;color:#071426}.btn.ghost{background:transparent}
+.kpi-banner{display:flex;align-items:center;gap:15px;padding:16px 19px;border:1px solid #27405b;border-radius:15px;background:linear-gradient(100deg,#122842,#102034);margin-bottom:19px}.shield{width:43px;height:43px;display:grid;place-items:center;border-radius:13px;background:#1a3554;color:#9dc7ff;font-size:22px;flex-shrink:0}.kpi-copy{flex:1}.kpi-copy b{font-size:13px;display:block}.kpi-copy span{font-size:12px;color:var(--muted)}.posture{min-width:175px}.postureline{height:6px;background:#263b53;border-radius:99px;overflow:hidden;margin:7px 0 4px}.postureline span{display:block;width:0;height:100%;background:linear-gradient(90deg,var(--green),var(--amber),var(--red));transition:width .25s}.posture small{color:var(--muted);font-size:10px}
+.grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(300px,.9fr);gap:18px}.card{background:linear-gradient(145deg,#111f32,#0f1a2b);border:1px solid var(--line);border-radius:16px;padding:21px;min-width:0;box-shadow:0 12px 32px #00000010}.card.full{grid-column:1/-1}.head{display:flex;gap:12px;align-items:flex-start;margin-bottom:16px}.step{width:32px;height:32px;border-radius:10px;border:1px solid #34537a;background:#172e4c;color:#9cc6ff;display:grid;place-items:center;font-size:12px;font-weight:900;flex-shrink:0}.head h2{font-size:16px;margin:1px 0 4px;letter-spacing:-.3px}.sub{font-size:12px;color:var(--muted);margin:0}
+.presets{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 12px}.presets label{font-size:11px;color:var(--muted);margin-right:2px}.preset{border:1px solid #30455f;background:#13243a;color:#bcd0e8;border-radius:8px;padding:7px 10px;font-size:11px;font-weight:750}.preset:hover{border-color:#70a9ff}.preset.selected{border-color:#6ea8fe;color:#dceaff;background:#1a3556}
+textarea{width:100%;min-height:230px;resize:vertical;display:block;border:1px solid #30435d;border-radius:11px;background:#081321;color:#d8e7fb;padding:14px;font:12px/1.7 "Cascadia Code",Consolas,monospace;outline:none}textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px #6ea8fe1b}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:13px}.message{font-size:12px;min-height:19px;color:var(--muted);margin:12px 0 0}.message.success{color:var(--green)}.message.error{color:var(--red)}
+.checks{display:grid;gap:10px}.check{display:flex;align-items:flex-start;gap:11px;padding:12px;border:1px solid #273b55;border-radius:11px;background:#0b1727}.checknum{width:27px;height:27px;border-radius:8px;background:#193454;color:#9fc6ff;display:grid;place-items:center;font-size:11px;font-weight:900;flex-shrink:0}.check b{display:block;font-size:12px;margin-bottom:2px}.check span{display:block;color:var(--muted);font-size:11px}
+.stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:11px}.stat{border:1px solid #293c55;border-radius:12px;background:#0b1727;padding:15px;min-width:0}.statlabel{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:11px}.dot{width:6px;height:6px;border-radius:50%;background:var(--blue);flex-shrink:0}.stat b{font-size:28px;line-height:1.35;letter-spacing:-.8px;display:block;margin-top:7px;font-variant-numeric:tabular-nums}.stat.risk b{color:var(--red)}.stat.warn b{color:var(--amber)}.stat.safe b{color:var(--green)}
+.tablewrap{overflow:auto;border:1px solid #293c55;border-radius:11px}table{border-collapse:collapse;width:100%;min-width:800px;font-size:12px}th{background:#17283f;color:#aebfda;font-size:10px;text-transform:uppercase;letter-spacing:.65px}th,td{text-align:left;vertical-align:top;padding:12px 13px;border-bottom:1px solid #263950}tbody tr:last-child td{border-bottom:0}tbody tr:hover{background:#192a40}.severity{display:inline-block;padding:4px 7px;border-radius:6px;font-size:10px;font-weight:900}.HIGH{color:#ffb1bd;background:#482331}.MEDIUM{color:#ffdc88;background:#443719}.INFO{color:#a9ccff;background:#1a3452}.score{font-weight:900;font-variant-numeric:tabular-nums}.empty{text-align:center;color:var(--muted);padding:24px}
+.validation-list{display:grid;gap:8px;list-style:none;margin:0;padding:0}.validation-list li{padding:11px 13px;border:1px solid #293c55;background:#0b1727;border-radius:9px;font-size:12px}.validation-list .success{color:#8ce8c6;border-color:#285748}.validation-list .error{color:#ffb1bd;border-color:#60303e}
+.footer{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:#7186a2;font-size:11px;padding:19px 2px 0}.footer strong{color:#a5b8d2;font-weight:700}
+@media(min-width:1500px){.content{padding-top:38px}.card{padding:24px}.grid{gap:20px}}
+@media(max-width:1050px){.sidebar{width:68px;padding:18px 9px}.brand{padding:0 5px 25px}.brandtext,.navlabel,.navtext,.sidebottom{display:none}.brandmark{width:42px;height:42px}.nav a{justify-content:center;padding:12px 7px}.navicon{width:auto}.main{margin-left:68px}.stats{grid-template-columns:repeat(3,minmax(0,1fr))}.grid{grid-template-columns:minmax(0,1fr)}.card.full{grid-column:auto}}
+@media(max-width:600px){.topbar{height:58px;padding:0 15px}.content{padding:22px 13px 30px}.hero{align-items:flex-start;flex-direction:column}.heroactions{width:100%}.kpi-banner{align-items:flex-start;flex-wrap:wrap}.posture{width:100%}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.card{padding:15px}.lead{font-size:13px}.grid{gap:13px}.status-extra{display:none}}
 </style>
 </head>
 <body>
-<div class="topbar"><div class="topinner">
-  <div class="brand"><div class="logo">S</div><div><div class="brandname">SENTINEL <span style="color:#80baff">/</span> Firewall Analyzer</div><div class="brandtag">Cloud security · Configuration review</div></div></div>
-  <div class="statuspill">● LOCAL DEMO MODE</div>
-</div></div>
-<main>
-<section class="hero">
- <div><div class="eyebrow">Milestone 4 · Integrated prototype</div><h1>Cloud Firewall Rule Analyzer</h1><p class="lead">Review firewall rules, spot potentially risky exposure, validate configuration, and get clear remediation guidance — all in one local dashboard.</p></div>
- <div class="hero-note"><strong>◈ Privacy-first demo</strong><span>Runs locally · No live firewall changes</span></div>
-</section>
+<div class="layout">
+<aside class="sidebar">
+ <div class="brand"><div class="brandmark">S</div><div class="brandtext"><strong>SENTINEL</strong><small>Security workspace</small></div></div>
+ <div class="navlabel">WORKSPACE</div>
+ <nav class="nav"><a class="active" href="#overview"><span class="navicon">▦</span><span class="navtext">Overview</span></a><a href="#input"><span class="navicon">⌘</span><span class="navtext">Rule analysis</span></a><a href="#findings"><span class="navicon">⚑</span><span class="navtext">Findings</span></a><a href="#validation"><span class="navicon">✓</span><span class="navtext">Validation</span></a></nav>
+ <div class="navlabel">PROJECT</div><nav class="nav"><a href="#about"><span class="navicon">ⓘ</span><span class="navtext">How it works</span></a></nav>
+ <div class="sidebottom"><b>◈ Local analysis mode</b><p>Sample data is processed on this computer. No cloud firewall is modified.</p></div>
+</aside>
+<div class="main">
+<header class="topbar"><div class="crumb">Security workspace &nbsp;/&nbsp; <b>Firewall analyzer</b></div><div class="topright"><span class="status-extra" style="font-size:11px;color:var(--muted)">Milestone 4 prototype</span><span class="live"><i></i> LOCAL DEMO</span></div></header>
+<main class="content" id="overview">
+<section class="hero"><div><div class="eyebrow">Cloud security · Configuration review</div><h1>Cloud Firewall Rule Analyzer</h1><p class="lead">Find risky network exposure, validate firewall configurations, and turn technical findings into clear, actionable recommendations.</p></div><div class="heroactions"><button class="btn ghost" id="resetTop">↺ Reset demo</button><button class="btn primary" id="runTop">▶ Run analysis</button></div></section>
+<section class="kpi-banner" aria-live="polite"><div class="shield">⬡</div><div class="kpi-copy"><b id="postureTitle">Security posture awaiting analysis</b><span id="postureText">Run the sample rules to calculate a demo risk overview.</span></div><div class="posture"><div class="postureline"><span id="postureBar"></span></div><small id="postureScore">No score calculated</small></div></section>
 <div class="grid">
-<section class="card inputcard">
- <div class="sectionhead"><div class="step">01</div><div><h2>Firewall rule input</h2><p class="sub">Paste or edit a JSON array of firewall rules to inspect.</p></div></div>
+<section class="card" id="input">
+ <div class="head"><div class="step">01</div><div><h2>Firewall rule input</h2><p class="sub">Choose a scenario or edit the JSON directly.</p></div></div>
+ <div class="presets"><label>DEMO SCENARIOS</label><button class="preset selected" data-preset="risky">Risky rules</button><button class="preset" data-preset="safe">Safer rules</button><button class="preset" data-preset="invalid">Invalid input</button></div>
  <textarea id="rules" spellcheck="false" aria-label="Firewall rules JSON">[
   {"id":"FW-001","source":"0.0.0.0/0","protocol":"tcp","port":22,"action":"allow"},
   {"id":"FW-002","source":"0.0.0.0/0","protocol":"tcp","port":443,"action":"allow"},
   {"id":"FW-003","source":"10.0.0.0/8","protocol":"tcp","port":"8000-8100","action":"allow"},
   {"id":"FW-004","source":"0.0.0.0/0","protocol":"tcp","port":5432,"action":"allow"}
 ]</textarea>
- <div class="actions"><button class="primary" id="analyze">▶ &nbsp; Analyze rules</button><button class="secondary" id="restore">Restore sample</button><button class="tertiary" id="download">↓ &nbsp; Export JSON report</button></div>
- <p id="message" class="message" role="status">Ready when you are. Select Analyze rules to begin.</p>
+ <div class="actions"><button class="btn primary" id="analyze">▶ &nbsp; Analyze rules</button><button class="btn" id="restore">Restore default</button><button class="btn" id="download">↓ &nbsp; Export report</button></div>
+ <p id="message" class="message" role="status">Ready. Select a scenario and run analysis.</p>
 </section>
-<aside class="card guidecard">
- <div class="sectionhead"><div class="step">i</div><div><h2>What this tool checks</h2><p class="sub">A quick guide to the analysis pipeline.</p></div></div>
- <div class="guide-list">
-  <div class="guideitem"><div class="guideicon">1</div><div><strong>Validate the input</strong><span>Checks source ranges, protocol, port, and action fields.</span></div></div>
-  <div class="guideitem"><div class="guideicon">2</div><div><strong>Inspect exposure</strong><span>Flags selected public admin and database ports.</span></div></div>
-  <div class="guideitem"><div class="guideicon">3</div><div><strong>Explain the risk</strong><span>Shows evidence, severity, and practical recommendations.</span></div></div>
-  <div class="guideitem"><div class="guideicon">4</div><div><strong>Export the report</strong><span>Download a JSON report for review or documentation.</span></div></div>
+<aside class="card" id="about">
+ <div class="head"><div class="step">i</div><div><h2>Analysis pipeline</h2><p class="sub">What happens when you click Analyze.</p></div></div>
+ <div class="checks">
+  <div class="check"><div class="checknum">1</div><div><b>Validate input</b><span>Check source CIDR, protocol, port and action fields.</span></div></div>
+  <div class="check"><div class="checknum">2</div><div><b>Inspect exposure</b><span>Check selected public admin and database ports.</span></div></div>
+  <div class="check"><div class="checknum">3</div><div><b>Score findings</b><span>Show severity, score, evidence and remediation guidance.</span></div></div>
+  <div class="check"><div class="checknum">4</div><div><b>Generate report</b><span>Save report.json and report.html for review.</span></div></div>
  </div>
 </aside>
-<section class="card summarycard">
- <div class="sectionhead"><div class="step">02</div><div><h2>Analysis overview</h2><p class="sub">Summary updates after you analyze the submitted rules.</p></div></div>
- <div id="stats" class="summarygrid">
-  <div class="stat"><div class="statlabel"><i class="dot"></i>Total rules</div><b>—</b></div>
-  <div class="stat"><div class="statlabel"><i class="dot"></i>Valid rules</div><b>—</b></div>
-  <div class="stat"><div class="statlabel"><i class="dot"></i>Invalid rules</div><b>—</b></div>
-  <div class="stat"><div class="statlabel"><i class="dot"></i>Findings</div><b>—</b></div>
-  <div class="stat risk"><div class="statlabel"><i class="dot" style="background:var(--red)"></i>High risk</div><b>—</b></div>
-  <div class="stat warn"><div class="statlabel"><i class="dot" style="background:var(--amber)"></i>Medium risk</div><b>—</b></div>
+<section class="card full">
+ <div class="head"><div class="step">02</div><div><h2>Analysis overview</h2><p class="sub">Counts from the latest submitted rule set.</p></div></div>
+ <div class="stats" id="stats">
+ <div class="stat"><div class="statlabel"><i class="dot"></i>Total rules</div><b>—</b></div><div class="stat"><div class="statlabel"><i class="dot"></i>Valid rules</div><b>—</b></div><div class="stat"><div class="statlabel"><i class="dot"></i>Invalid rules</div><b>—</b></div><div class="stat"><div class="statlabel"><i class="dot"></i>Findings</div><b>—</b></div><div class="stat risk"><div class="statlabel"><i class="dot" style="background:var(--red)"></i>High risk</div><b>—</b></div><div class="stat warn"><div class="statlabel"><i class="dot" style="background:var(--amber)"></i>Medium risk</div><b>—</b></div>
  </div>
 </section>
-<section class="card findingscard">
- <div class="sectionhead"><div class="step">03</div><div><h2>Findings & recommendations</h2><p class="sub">Review the evidence behind each flagged rule and how to reduce exposure.</p></div></div>
- <div class="tablewrap"><table><thead><tr><th>Severity</th><th>Score</th><th>Rule ID</th><th>Finding</th><th>Evidence</th><th>Recommendation</th></tr></thead><tbody id="findings"><tr><td colspan="6" class="empty">No analysis run yet. Analyze the sample rules to see findings.</td></tr></tbody></table></div>
+<section class="card full" id="findings">
+ <div class="head"><div class="step">03</div><div><h2>Findings & recommendations</h2><p class="sub">Review each flagged rule, supporting evidence, and suggested next step.</p></div></div>
+ <div class="tablewrap"><table><thead><tr><th>Severity</th><th>Score</th><th>Rule ID</th><th>Finding</th><th>Evidence</th><th>Recommendation</th></tr></thead><tbody id="findingRows"><tr><td colspan="6" class="empty">No analysis run yet. Analyze the sample to see findings.</td></tr></tbody></table></div>
 </section>
-<section class="card validationcard">
- <div class="sectionhead"><div class="step">04</div><div><h2>Input validation</h2><p class="sub">Errors are shown here so malformed rules can be corrected.</p></div></div>
+<section class="card full" id="validation">
+ <div class="head"><div class="step">04</div><div><h2>Input validation</h2><p class="sub">Validation messages help explain malformed or unsupported rule data.</p></div></div>
  <ul id="errors" class="validation-list"><li class="empty">No validation results yet.</li></ul>
 </section>
-</div>
-<footer class="foot"><span>Sentinel · Cloud Firewall Rule Analyzer · Educational prototype</span><span>Predefined checks only · No cloud account connection · No automatic changes</span></footer>
+<footer class="footer"><span><strong>SENTINEL</strong> · Cloud Firewall Rule Analyzer</span><span>Educational prototype · Predefined checks · No live cloud changes</span></footer>
 </main>
+</div>
+</div>
 <script>
-const initial = document.getElementById('rules').value;
-let lastReport = null;
-const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({
-  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-}[char]));
-
-document.getElementById('restore').onclick = () => {
-  document.getElementById('rules').value = initial;
-  document.getElementById('message').className = 'message';
-  document.getElementById('message').textContent = 'Sample restored. Select Analyze rules to run the checks.';
+const textarea=document.getElementById('rules');
+const initial=textarea.value;
+const presets={
+risky:initial,
+safe:JSON.stringify([
+ {"id":"SAFE-001","source":"10.10.0.0/16","protocol":"tcp","port":22,"action":"allow"},
+ {"id":"SAFE-002","source":"0.0.0.0/0","protocol":"tcp","port":443,"action":"allow"},
+ {"id":"SAFE-003","source":"192.168.1.0/24","protocol":"tcp","port":5432,"action":"allow"}
+],null,2),
+invalid:JSON.stringify([
+ {"id":"BAD-001","source":"not-a-cidr","protocol":"tcp","port":70000,"action":"allow"},
+ {"id":"BAD-002","source":"0.0.0.0/0","protocol":"unknown","port":22,"action":"permit"}
+],null,2)
 };
-document.getElementById('analyze').onclick = async () => {
-  const message = document.getElementById('message');
-  try {
-    message.className = 'message';
-    message.textContent = 'Analyzing rules…';
-    const rules = JSON.parse(document.getElementById('rules').value);
-    if (!Array.isArray(rules)) throw Error('Input must be a JSON list of rules.');
-    const response = await fetch('/analyze', {
-      method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({rules})
-    });
-    const data = await response.json();
-    if (!response.ok) throw Error(data.error || 'Analysis failed.');
-    lastReport = data;
-    const s = data.summary;
-    const items = [
-      ['Total rules',s.total_rules,''],['Valid rules',s.valid_rules,'safe'],
-      ['Invalid rules',s.invalid_rules,s.invalid_rules?'risk':''],
-      ['Findings',s.findings,''],['High risk',s.high,'risk'],['Medium risk',s.medium,'warn']
-    ];
-    document.getElementById('stats').innerHTML = items.map(x =>
-      '<div class="stat '+x[2]+'"><div class="statlabel"><i class="dot"></i>'+esc(x[0])+'</div><b>'+esc(x[1])+'</b></div>'
-    ).join('');
-    document.getElementById('findings').innerHTML = data.findings.length
-      ? data.findings.map(f => '<tr><td><span class="severity '+esc(f.severity)+'">'+esc(f.severity)+'</span></td><td class="score">'+esc(f.risk_score)+'</td><td>'+esc(f.rule_id)+'</td><td>'+esc(f.title)+'</td><td>'+esc(f.evidence)+'</td><td>'+esc(f.recommendation)+'</td></tr>').join('')
-      : '<tr><td colspan="6" class="empty">No findings for the submitted rules.</td></tr>';
-    document.getElementById('errors').innerHTML = data.validation_errors.length
-      ? data.validation_errors.map(e => '<li class="error">'+esc(e)+'</li>').join('')
-      : '<li class="success">✓ No validation errors. All submitted rules passed input validation.</li>';
-    message.className = 'message success';
-    message.textContent = '✓ Analysis complete. Results are ready and report files were saved.';
-  } catch (error) {
-    message.className = 'message error';
-    message.textContent = 'Could not analyze input: ' + error.message;
-  }
+let lastReport=null;
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function setMessage(text,kind=''){const m=document.getElementById('message');m.className='message '+kind;m.textContent=text}
+function choosePreset(name){textarea.value=presets[name];document.querySelectorAll('[data-preset]').forEach(b=>b.classList.toggle('selected',b.dataset.preset===name));setMessage('Loaded '+name+' demo scenario. Click Analyze rules to run it.')}
+document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>choosePreset(b.dataset.preset)));
+document.getElementById('restore').onclick=()=>{choosePreset('risky');setMessage('Default sample restored. Click Analyze rules to run it.')};
+document.getElementById('resetTop').onclick=()=>{choosePreset('risky');lastReport=null;setMessage('Demo reset. Ready for a new analysis.')};
+document.getElementById('runTop').onclick=()=>document.getElementById('analyze').click();
+document.getElementById('analyze').onclick=async()=>{
+ try{
+  setMessage('Analyzing rules…');
+  const rules=JSON.parse(textarea.value);
+  if(!Array.isArray(rules))throw Error('Input must be a JSON list of firewall rules.');
+  const response=await fetch('/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rules})});
+  const data=await response.json();if(!response.ok)throw Error(data.error||'Analysis failed.');
+  lastReport=data;const s=data.summary;
+  const items=[['Total rules',s.total_rules,''],['Valid rules',s.valid_rules,'safe'],['Invalid rules',s.invalid_rules,s.invalid_rules?'risk':''],['Findings',s.findings,''],['High risk',s.high,'risk'],['Medium risk',s.medium,'warn']];
+  document.getElementById('stats').innerHTML=items.map((x,i)=>'<div class="stat '+x[2]+'"><div class="statlabel"><i class="dot" style="background:'+(i===4?'var(--red)':i===5?'var(--amber)':i===1?'var(--green)':'var(--blue)')+'"></i>'+esc(x[0])+'</div><b>'+esc(x[1])+'</b></div>').join('');
+  document.getElementById('findingRows').innerHTML=data.findings.length?data.findings.map(f=>'<tr><td><span class="severity '+esc(f.severity)+'">'+esc(f.severity)+'</span></td><td class="score">'+esc(f.risk_score)+'</td><td>'+esc(f.rule_id)+'</td><td>'+esc(f.title)+'</td><td>'+esc(f.evidence)+'</td><td>'+esc(f.recommendation)+'</td></tr>').join(''):'<tr><td colspan="6" class="empty">No findings for these rules.</td></tr>';
+  document.getElementById('errors').innerHTML=data.validation_errors.length?data.validation_errors.map(e=>'<li class="error">'+esc(e)+'</li>').join(''):'<li class="success">✓ No validation errors. All submitted rules passed input validation.</li>';
+  const score=Math.min(100,Math.round((Number(s.high||0)*35+Number(s.medium||0)*18+Number(s.findings||0)*5+Number(s.invalid_rules||0)*10)/Math.max(1,Number(s.total_rules||0))));
+  document.getElementById('postureBar').style.width=score+'%';
+  document.getElementById('postureTitle').textContent=score>=55?'Elevated exposure detected':score>=25?'Review recommended':'No major flagged exposure in this sample';
+  document.getElementById('postureText').textContent=s.findings+' finding(s) and '+s.invalid_rules+' invalid rule(s) detected by the predefined checks.';
+  document.getElementById('postureScore').textContent='Demo risk indicator: '+score+'/100 · heuristic, not a compliance rating';
+  setMessage('✓ Analysis complete. Results displayed; report.json and report.html were saved.','success');
+ }catch(e){setMessage('Could not analyze input: '+e.message,'error')}
 };
-document.getElementById('download').onclick = () => {
-  if (!lastReport) {
-    const m = document.getElementById('message');
-    m.className = 'message error'; m.textContent = 'Run an analysis first, then export the report.';
-    return;
-  }
-  const blob = new Blob([JSON.stringify(lastReport,null,2)],{type:'application/json'});
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob); link.download = 'firewall-analysis-report.json';
-  link.click(); URL.revokeObjectURL(link.href);
+document.getElementById('download').onclick=()=>{
+ if(!lastReport){setMessage('Run an analysis first, then export the report.','error');return}
+ const blob=new Blob([JSON.stringify(lastReport,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download='firewall-analysis-report.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)
 };
 </script>
 </body></html>"""
