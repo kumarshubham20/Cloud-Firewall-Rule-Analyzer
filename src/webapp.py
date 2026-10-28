@@ -33,6 +33,7 @@ textarea{width:100%;min-height:230px;resize:vertical;display:block;border:1px so
 @media(min-width:1500px){.content{padding-top:38px}.card{padding:24px}.grid{gap:20px}}
 @media(max-width:1050px){.sidebar{width:68px;padding:18px 9px}.brand{padding:0 5px 25px}.brandtext,.navlabel,.navtext,.sidebottom{display:none}.brandmark{width:42px;height:42px}.nav a{justify-content:center;padding:12px 7px}.navicon{width:auto}.main{margin-left:68px}.stats{grid-template-columns:repeat(3,minmax(0,1fr))}.grid{grid-template-columns:minmax(0,1fr)}.card.full{grid-column:auto}}
 @media(max-width:600px){.topbar{height:58px;padding:0 15px}.content{padding:22px 13px 30px}.hero{align-items:flex-start;flex-direction:column}.heroactions{width:100%}.kpi-banner{align-items:flex-start;flex-wrap:wrap}.posture{width:100%}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.card{padding:15px}.lead{font-size:13px}.grid{gap:13px}.status-extra{display:none}}
+@media print{body{background:#fff!important;color:#172033!important;font-size:11px}.sidebar,.topbar,.heroactions,.presets,.actions,.filters,.sidebottom{display:none!important}.main{margin:0!important}.content{max-width:none;padding:0!important}.card,.stat,.kpi-banner{background:#fff!important;color:#172033!important;box-shadow:none!important;border:1px solid #cbd5e1!important;break-inside:avoid}.sub,.lead,.kpi-copy span,.footer,.statlabel,.riskrow{color:#475569!important}.tablewrap{overflow:visible!important;border-color:#cbd5e1!important}table{min-width:0!important;font-size:9px}th,td{padding:5px!important;border-color:#cbd5e1!important;color:#172033!important}th{background:#e2e8f0!important}.severity{border:1px solid #94a3b8}.risktrack{border-color:#94a3b8!important}.empty{color:#475569!important}}
 </style>
 </head>
 <body>
@@ -59,7 +60,7 @@ textarea{width:100%;min-height:230px;resize:vertical;display:block;border:1px so
   {"id":"FW-003","source":"10.0.0.0/8","protocol":"tcp","port":"8000-8100","action":"allow"},
   {"id":"FW-004","source":"0.0.0.0/0","protocol":"tcp","port":5432,"action":"allow"}
 ]</textarea>
- <div class="actions"><button class="btn primary" id="analyze">▶ &nbsp; Analyze rules</button><button class="btn" id="restore">Restore default</button><button class="btn" id="download">↓ &nbsp; Export JSON</button><button class="btn" id="downloadCsv">↓ &nbsp; Export findings CSV</button></div>
+ <div class="actions"><button class="btn primary" id="analyze">▶ &nbsp; Analyze rules</button><button class="btn" id="restore">Restore default</button><button class="btn" id="download">↓ &nbsp; Export JSON</button><button class="btn" id="downloadCsv">↓ &nbsp; Export findings CSV</button><button class="btn" id="copySummary">▣ &nbsp; Copy summary</button><button class="btn" id="printReport">⎙ &nbsp; Print report</button></div>
  <p id="message" class="message" role="status">Ready. Select a scenario and run analysis.</p>
 </section>
 <aside class="card" id="about">
@@ -158,6 +159,17 @@ document.getElementById('downloadCsv').onclick=()=>{
  const csv=[fields.join(','),...lastReport.findings.map(f=>fields.map(k=>quote(f[k])).join(','))].join('\\r\\n');
  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})),a=document.createElement('a');
  a.href=url;a.download='firewall-findings.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
+document.getElementById('copySummary').onclick=async()=>{
+ if(!lastReport){setMessage('Run an analysis first, then copy the summary.','error');return}
+ const s=lastReport.summary;
+ const summary='Cloud Firewall Rule Analyzer — Analysis Summary\\nTotal rules: '+s.total_rules+'\\nValid rules: '+s.valid_rules+'\\nInvalid rules: '+s.invalid_rules+'\\nFindings: '+s.findings+'\\nHigh risk: '+s.high+'\\nMedium risk: '+s.medium+'\\nInformational: '+s.info;
+ try{await navigator.clipboard.writeText(summary);setMessage('Analysis summary copied to clipboard.','success')}
+ catch(e){setMessage('Clipboard access was blocked by the browser. Use Export JSON instead.','error')}
+};
+document.getElementById('printReport').onclick=()=>{
+ if(!lastReport){setMessage('Run an analysis first, then print the report.','error');return}
+ window.print();
 };
 document.getElementById('download').onclick=()=>{
  if(!lastReport){setMessage('Run an analysis first, then export the report.','error');return}
