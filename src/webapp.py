@@ -26,6 +26,8 @@ textarea{width:100%;min-height:230px;resize:vertical;display:block;border:1px so
 .checks{display:grid;gap:10px}.check{display:flex;align-items:flex-start;gap:11px;padding:12px;border:1px solid #273b55;border-radius:11px;background:#0b1727}.checknum{width:27px;height:27px;border-radius:8px;background:#193454;color:#9fc6ff;display:grid;place-items:center;font-size:11px;font-weight:900;flex-shrink:0}.check b{display:block;font-size:12px;margin-bottom:2px}.check span{display:block;color:var(--muted);font-size:11px}
 .stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:11px}.stat{border:1px solid #293c55;border-radius:12px;background:#0b1727;padding:15px;min-width:0}.statlabel{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:11px}.dot{width:6px;height:6px;border-radius:50%;background:var(--blue);flex-shrink:0}.stat b{font-size:28px;line-height:1.35;letter-spacing:-.8px;display:block;margin-top:7px;font-variant-numeric:tabular-nums}.stat.risk b{color:var(--red)}.stat.warn b{color:var(--amber)}.stat.safe b{color:var(--green)}
 .tablewrap{overflow:auto;border:1px solid #293c55;border-radius:11px}table{border-collapse:collapse;width:100%;min-width:800px;font-size:12px}th{background:#17283f;color:#aebfda;font-size:10px;text-transform:uppercase;letter-spacing:.65px}th,td{text-align:left;vertical-align:top;padding:12px 13px;border-bottom:1px solid #263950}tbody tr:last-child td{border-bottom:0}tbody tr:hover{background:#192a40}.severity{display:inline-block;padding:4px 7px;border-radius:6px;font-size:10px;font-weight:900}.HIGH{color:#ffb1bd;background:#482331}.MEDIUM{color:#ffdc88;background:#443719}.INFO{color:#a9ccff;background:#1a3452}.score{font-weight:900;font-variant-numeric:tabular-nums}.empty{text-align:center;color:var(--muted);padding:24px}
+.filters{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin:0 0 13px}.filters input,.filters select{background:#0a1727;border:1px solid #30445f;color:var(--text);border-radius:9px;padding:10px 12px;min-height:39px;font:inherit;font-size:12px}.filters input{flex:1;min-width:200px}.filters select{min-width:140px}.filtercount{font-size:11px;color:var(--muted);white-space:nowrap}
+.riskbars{display:grid;gap:14px}.riskrow{display:grid;grid-template-columns:115px minmax(60px,1fr) 35px;align-items:center;gap:12px;font-size:12px;color:var(--muted)}.risktrack{height:10px;background:#081321;border:1px solid #293c55;border-radius:99px;overflow:hidden}.riskfill{height:100%;border-radius:99px;transition:width .25s}.riskfill.high{background:linear-gradient(90deg,#ef4444,#fb7185)}.riskfill.medium{background:linear-gradient(90deg,#d97706,#fbbf24)}.riskfill.info{background:linear-gradient(90deg,#3b82f6,#67e8f9)}.risknumber{text-align:right;color:var(--text);font-weight:900}
 .validation-list{display:grid;gap:8px;list-style:none;margin:0;padding:0}.validation-list li{padding:11px 13px;border:1px solid #293c55;background:#0b1727;border-radius:9px;font-size:12px}.validation-list .success{color:#8ce8c6;border-color:#285748}.validation-list .error{color:#ffb1bd;border-color:#60303e}
 .footer{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:#7186a2;font-size:11px;padding:19px 2px 0}.footer strong{color:#a5b8d2;font-weight:700}
 @media(min-width:1500px){.content{padding-top:38px}.card{padding:24px}.grid{gap:20px}}
@@ -57,7 +59,7 @@ textarea{width:100%;min-height:230px;resize:vertical;display:block;border:1px so
   {"id":"FW-003","source":"10.0.0.0/8","protocol":"tcp","port":"8000-8100","action":"allow"},
   {"id":"FW-004","source":"0.0.0.0/0","protocol":"tcp","port":5432,"action":"allow"}
 ]</textarea>
- <div class="actions"><button class="btn primary" id="analyze">▶ &nbsp; Analyze rules</button><button class="btn" id="restore">Restore default</button><button class="btn" id="download">↓ &nbsp; Export report</button></div>
+ <div class="actions"><button class="btn primary" id="analyze">▶ &nbsp; Analyze rules</button><button class="btn" id="restore">Restore default</button><button class="btn" id="download">↓ &nbsp; Export JSON</button><button class="btn" id="downloadCsv">↓ &nbsp; Export findings CSV</button></div>
  <p id="message" class="message" role="status">Ready. Select a scenario and run analysis.</p>
 </section>
 <aside class="card" id="about">
@@ -77,8 +79,9 @@ textarea{width:100%;min-height:230px;resize:vertical;display:block;border:1px so
 </section>
 <section class="card full" id="findings">
  <div class="head"><div class="step">03</div><div><h2>Findings & recommendations</h2><p class="sub">Review each flagged rule, supporting evidence, and suggested next step.</p></div></div>
- <div class="tablewrap"><table><thead><tr><th>Severity</th><th>Score</th><th>Rule ID</th><th>Finding</th><th>Evidence</th><th>Recommendation</th></tr></thead><tbody id="findingRows"><tr><td colspan="6" class="empty">No analysis run yet. Analyze the sample to see findings.</td></tr></tbody></table></div>
+ <div class="filters"><input id="findingSearch" type="search" placeholder="Search rule ID, issue, or evidence…" aria-label="Search findings"><select id="severityFilter" aria-label="Filter findings by severity"><option value="ALL">All severities</option><option value="HIGH">High risk</option><option value="MEDIUM">Medium risk</option><option value="INFO">Informational</option></select><span id="resultCount" class="filtercount">0 findings</span></div><div class="tablewrap"><table><thead><tr><th>Severity</th><th>Score</th><th>Rule ID</th><th>Finding</th><th>Evidence</th><th>Recommendation</th></tr></thead><tbody id="findingRows"><tr><td colspan="6" class="empty">No analysis run yet. Analyze the sample to see findings.</td></tr></tbody></table></div>
 </section>
+<section class="card full" id="riskDistribution"><div class="head"><div class="step">05</div><div><h2>Risk distribution</h2><p class="sub">Visual breakdown of findings by severity for the current sample.</p></div></div><div id="riskBars" class="riskbars"><div class="empty">Run an analysis to view the risk breakdown.</div></div></section>
 <section class="card full" id="validation">
  <div class="head"><div class="step">04</div><div><h2>Input validation</h2><p class="sub">Validation messages help explain malformed or unsupported rule data.</p></div></div>
  <ul id="errors" class="validation-list"><li class="empty">No validation results yet.</li></ul>
@@ -120,7 +123,11 @@ document.getElementById('analyze').onclick=async()=>{
   lastReport=data;const s=data.summary;
   const items=[['Total rules',s.total_rules,''],['Valid rules',s.valid_rules,'safe'],['Invalid rules',s.invalid_rules,s.invalid_rules?'risk':''],['Findings',s.findings,''],['High risk',s.high,'risk'],['Medium risk',s.medium,'warn']];
   document.getElementById('stats').innerHTML=items.map((x,i)=>'<div class="stat '+x[2]+'"><div class="statlabel"><i class="dot" style="background:'+(i===4?'var(--red)':i===5?'var(--amber)':i===1?'var(--green)':'var(--blue)')+'"></i>'+esc(x[0])+'</div><b>'+esc(x[1])+'</b></div>').join('');
-  document.getElementById('findingRows').innerHTML=data.findings.length?data.findings.map(f=>'<tr><td><span class="severity '+esc(f.severity)+'">'+esc(f.severity)+'</span></td><td class="score">'+esc(f.risk_score)+'</td><td>'+esc(f.rule_id)+'</td><td>'+esc(f.title)+'</td><td>'+esc(f.evidence)+'</td><td>'+esc(f.recommendation)+'</td></tr>').join(''):'<tr><td colspan="6" class="empty">No findings for these rules.</td></tr>';
+  renderFindings();
+  const riskLevels=[{name:'High risk',key:'HIGH',cls:'high'},{name:'Medium risk',key:'MEDIUM',cls:'medium'},{name:'Informational',key:'INFO',cls:'info'}];
+  const riskCounts=riskLevels.map(x=>({...x,count:data.findings.filter(f=>f.severity===x.key).length}));
+  const maxRisk=Math.max(1,...riskCounts.map(x=>x.count));
+  document.getElementById('riskBars').innerHTML=riskCounts.map(x=>'<div class="riskrow"><span>'+x.name+'</span><div class="risktrack"><div class="riskfill '+x.cls+'" style="width:'+(x.count/maxRisk*100)+'%"></div></div><b class="risknumber">'+x.count+'</b></div>').join('');
   document.getElementById('errors').innerHTML=data.validation_errors.length?data.validation_errors.map(e=>'<li class="error">'+esc(e)+'</li>').join(''):'<li class="success">✓ No validation errors. All submitted rules passed input validation.</li>';
   const score=Math.min(100,Math.round((Number(s.high||0)*35+Number(s.medium||0)*18+Number(s.findings||0)*5+Number(s.invalid_rules||0)*10)/Math.max(1,Number(s.total_rules||0))));
   document.getElementById('postureBar').style.width=score+'%';
@@ -129,6 +136,28 @@ document.getElementById('analyze').onclick=async()=>{
   document.getElementById('postureScore').textContent='Demo risk indicator: '+score+'/100 · heuristic, not a compliance rating';
   setMessage('✓ Analysis complete. Results displayed; report.json and report.html were saved.','success');
  }catch(e){setMessage('Could not analyze input: '+e.message,'error')}
+};
+function renderFindings(){
+ if(!lastReport)return;
+ const query=document.getElementById('findingSearch').value.trim().toLowerCase();
+ const severity=document.getElementById('severityFilter').value;
+ const rows=lastReport.findings.filter(f=>{
+  const matchesSeverity=severity==='ALL'||f.severity===severity;
+  const text=[f.rule_id,f.title,f.evidence,f.recommendation,f.severity].join(' ').toLowerCase();
+  return matchesSeverity&&text.includes(query);
+ });
+ document.getElementById('resultCount').textContent=rows.length+' of '+lastReport.findings.length+' findings';
+ document.getElementById('findingRows').innerHTML=rows.length?rows.map(f=>'<tr><td><span class="severity '+esc(f.severity)+'">'+esc(f.severity)+'</span></td><td class="score">'+esc(f.risk_score)+'</td><td>'+esc(f.rule_id)+'</td><td>'+esc(f.title)+'</td><td>'+esc(f.evidence)+'</td><td>'+esc(f.recommendation)+'</td></tr>').join(''):'<tr><td colspan="6" class="empty">No findings match the current search or severity filter.</td></tr>';
+}
+document.getElementById('findingSearch').addEventListener('input',renderFindings);
+document.getElementById('severityFilter').addEventListener('change',renderFindings);
+document.getElementById('downloadCsv').onclick=()=>{
+ if(!lastReport){setMessage('Run an analysis first, then export findings.','error');return}
+ const fields=['severity','risk_score','rule_id','title','evidence','recommendation'];
+ const quote=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+ const csv=[fields.join(','),...lastReport.findings.map(f=>fields.map(k=>quote(f[k])).join(','))].join('\\r\\n');
+ const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})),a=document.createElement('a');
+ a.href=url;a.download='firewall-findings.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
 document.getElementById('download').onclick=()=>{
  if(!lastReport){setMessage('Run an analysis first, then export the report.','error');return}
