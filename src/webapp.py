@@ -84,6 +84,11 @@ textarea{width:100%;min-height:230px;resize:vertical;display:block;border:1px so
 </section>
 <section class="card full" id="riskDistribution"><div class="head"><div class="step">05</div><div><h2>Risk distribution</h2><p class="sub">Visual breakdown of findings by severity for the current sample.</p></div></div><div id="riskBars" class="riskbars"><div class="empty">Run an analysis to view the risk breakdown.</div></div></section>
 <section class="card full" id="exposureCheck"><div class="head"><div class="step">06</div><div><h2>Firewall exposure explorer</h2><p class="sub">Inspect which input rules allow a selected TCP port from a selected IPv4 address. Educational rule matching only; this does not simulate routing, rule priority, or cloud-provider behavior.</p></div></div><div class="filters"><input id="probeIp" aria-label="Source IPv4 address" placeholder="Source IPv4 (e.g. 8.8.8.8)" value="8.8.8.8"><input id="probePort" aria-label="Destination TCP port" type="number" min="1" max="65535" value="22"><button class="btn primary" id="probeRun">Check exposure</button></div><div id="probeResult" class="message">Run an analysis, then test an IP address and port.</div></section>
+<section class="card full" id="comparison">
+ <div class="head"><div class="step">06</div><div><h2>Before &amp; after remediation</h2><p class="sub">Compare findings before and after editing firewall rules. This is a local simulation; no cloud firewall is changed.</p></div></div>
+ <div class="actions"><button class="btn" id="saveBaseline">Save current analysis as baseline</button><button class="btn" id="compareBaseline">Compare with baseline</button><button class="btn" id="clearBaseline">Clear baseline</button></div>
+ <div id="comparisonResult" class="message" role="status">Analyze your current rules and save a baseline. Then edit the input to use safer rules, analyze again, and compare.</div>
+</section>
 <section class="card full" id="validation">
  <div class="head"><div class="step">04</div><div><h2>Input validation</h2><p class="sub">Validation messages help explain malformed or unsupported rule data.</p></div></div>
  <ul id="errors" class="validation-list"><li class="empty">No validation results yet.</li></ul>
@@ -108,6 +113,24 @@ invalid:JSON.stringify([
 ],null,2)
 };
 let lastReport=null;
+let baseline=null;
+document.getElementById('saveBaseline').onclick=()=>{
+ if(!lastReport){document.getElementById('comparisonResult').textContent='Run an analysis before saving a baseline.';return}
+ baseline=JSON.parse(JSON.stringify(lastReport.summary));
+ document.getElementById('comparisonResult').textContent='Baseline saved: '+baseline.high+' high-risk, '+baseline.medium+' medium-risk, '+baseline.findings+' total findings. Now load safer rules and analyze again.';
+};
+document.getElementById('compareBaseline').onclick=()=>{
+ const el=document.getElementById('comparisonResult');
+ if(!baseline||!lastReport){el.textContent='Save a baseline and run a new analysis before comparing.';return}
+ const s=lastReport.summary, delta=baseline.high-s.high;
+ const result=delta>0?delta+' fewer high-risk findings':delta<0?Math.abs(delta)+' more high-risk findings':'the same number of high-risk findings';
+ el.textContent='BEFORE: '+baseline.high+' high, '+baseline.medium+' medium, '+baseline.findings+' total findings. AFTER: '+s.high+' high, '+s.medium+' medium, '+s.findings+' total findings. Comparison: '+result+'. This measures analyzer findings, not a live cloud security posture.';
+};
+document.getElementById('clearBaseline').onclick=()=>{
+ baseline=null;
+ document.getElementById('comparisonResult').textContent='Baseline cleared. Analyze a scenario to begin a new comparison.';
+};
+
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function setMessage(text,kind=''){const m=document.getElementById('message');m.className='message '+kind;m.textContent=text}
 function choosePreset(name){textarea.value=presets[name];document.querySelectorAll('[data-preset]').forEach(b=>b.classList.toggle('selected',b.dataset.preset===name));setMessage('Loaded '+name+' demo scenario. Click Analyze rules to run it.')}
