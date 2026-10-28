@@ -185,6 +185,42 @@ def analyze_rules(rules):
         valid += 1
         findings.extend(analyze_rule(rule, index))
 
+    # Flag exact duplicate allow rules: they add maintenance complexity and can
+    # cause administrators to misunderstand which rule grants access.
+    seen_rules = {}
+    for index, rule in enumerate(rules, 1):
+        if not isinstance(rule, dict) or validate_rule(rule, index):
+            continue
+        action = str(rule["action"]).strip().lower()
+        if action != "allow":
+            continue
+        try:
+            source = str(ip_network(str(rule["source"]).strip(), strict=False))
+            protocol = str(rule["protocol"]).strip().lower()
+            start, end = parse_port(rule["port"])
+        except (ValueError, TypeError):
+            continue
+        signature = (source, protocol, start, end, action)
+        rule_id = str(rule.get("id", f"RULE-{index:03d}"))
+        if signature in seen_rules:
+            first_id = seen_rules[signature]
+            findings.append({
+                "rule_id": rule_id,
+                "severity": "MEDIUM",
+                "risk_score": 40,
+                "title": "Duplicate allow rule",
+                "evidence": (
+                    f"Rule {rule_id} duplicates the source, protocol, port, "
+                    f"and action of rule {first_id}."
+                ),
+                "recommendation": (
+                    "Review both rules and remove redundant entries only after "
+                    "confirming that no separate policy or ownership requires them."
+                ),
+            })
+        else:
+            seen_rules[signature] = rule_id
+
     severity_order = {"HIGH": 0, "MEDIUM": 1, "LOW": 2, "INFO": 3}
     findings.sort(
         key=lambda item: (
