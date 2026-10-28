@@ -1,0 +1,4 @@
+id,source,protocol,port,action,description
+FW-001,0.0.0.0/0,tcp,22,allow,SSH from anywhere
+FW-002,0.0.0.0/0,tcp,443,allow,Public HTTPS
+FW-003,203.0.113.10/32,tcp,22,allow,SSH from example trusted IP
