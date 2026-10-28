@@ -1,0 +1,23 @@
+# Python bytecode and cache directories
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Generated analysis output (regenerate by running the program)
+report.json
+report.html
+invalid_report.json
+invalid_report.html
+csv_report.json
+csv_report.html
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
