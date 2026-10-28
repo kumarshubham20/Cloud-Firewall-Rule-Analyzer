@@ -1,0 +1,16 @@
+[
+  {
+    "id": "BAD-001",
+    "source": "999.1.1.1",
+    "protocol": "tcp",
+    "port": 70000,
+    "action": "permit"
+  },
+  {
+    "id": "BAD-002",
+    "source": "0.0.0.0/0",
+    "protocol": "sctp",
+    "port": "abc",
+    "action": "allow"
+  }
+]
