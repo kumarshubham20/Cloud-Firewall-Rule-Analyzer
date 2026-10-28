@@ -56,6 +56,14 @@ class AnalyzerTests(unittest.TestCase):
         }])
         self.assertTrue(any("SSH" in finding["title"] for finding in report["findings"]))
 
+    def test_duplicate_allow_rule_is_flagged(self):
+        rules = [
+            {"id": "DUP-001", "source": "10.0.0.0/8", "protocol": "tcp", "port": 443, "action": "allow"},
+            {"id": "DUP-002", "source": "10.0.0.0/8", "protocol": "tcp", "port": 443, "action": "allow"},
+        ]
+        report = analyze_rules(rules)
+        self.assertTrue(any(f["title"] == "Duplicate allow rule" for f in report["findings"]))
+
     def test_html_report_is_created(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "report.html"
