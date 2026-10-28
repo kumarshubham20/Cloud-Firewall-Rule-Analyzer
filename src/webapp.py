@@ -83,6 +83,7 @@ textarea{width:100%;min-height:230px;resize:vertical;display:block;border:1px so
  <div class="filters"><input id="findingSearch" type="search" placeholder="Search rule ID, issue, or evidence…" aria-label="Search findings"><select id="severityFilter" aria-label="Filter findings by severity"><option value="ALL">All severities</option><option value="HIGH">High risk</option><option value="MEDIUM">Medium risk</option><option value="INFO">Informational</option></select><span id="resultCount" class="filtercount">0 findings</span></div><div class="tablewrap"><table><thead><tr><th>Severity</th><th>Score</th><th>Rule ID</th><th>Finding</th><th>Evidence</th><th>Recommendation</th></tr></thead><tbody id="findingRows"><tr><td colspan="6" class="empty">No analysis run yet. Analyze the sample to see findings.</td></tr></tbody></table></div>
 </section>
 <section class="card full" id="riskDistribution"><div class="head"><div class="step">05</div><div><h2>Risk distribution</h2><p class="sub">Visual breakdown of findings by severity for the current sample.</p></div></div><div id="riskBars" class="riskbars"><div class="empty">Run an analysis to view the risk breakdown.</div></div></section>
+<section class="card full" id="exposureCheck"><div class="head"><div class="step">06</div><div><h2>Firewall exposure explorer</h2><p class="sub">Inspect which input rules allow a selected TCP port from a selected IPv4 address. Educational rule matching only; this does not simulate routing, rule priority, or cloud-provider behavior.</p></div></div><div class="filters"><input id="probeIp" aria-label="Source IPv4 address" placeholder="Source IPv4 (e.g. 8.8.8.8)" value="8.8.8.8"><input id="probePort" aria-label="Destination TCP port" type="number" min="1" max="65535" value="22"><button class="btn primary" id="probeRun">Check exposure</button></div><div id="probeResult" class="message">Run an analysis, then test an IP address and port.</div></section>
 <section class="card full" id="validation">
  <div class="head"><div class="step">04</div><div><h2>Input validation</h2><p class="sub">Validation messages help explain malformed or unsupported rule data.</p></div></div>
  <ul id="errors" class="validation-list"><li class="empty">No validation results yet.</li></ul>
@@ -170,6 +171,21 @@ document.getElementById('copySummary').onclick=async()=>{
 document.getElementById('printReport').onclick=()=>{
  if(!lastReport){setMessage('Run an analysis first, then print the report.','error');return}
  window.print();
+};
+function ipv4ToInt(ip){const parts=ip.split('.');if(parts.length!==4||parts.some(x=>!/^(0|[1-9][0-9]{0,2})$/.test(x)||Number(x)>255))throw Error('Enter a valid IPv4 address.');return parts.reduce((v,x)=>v*256+Number(x),0)}
+function matchesCidr(ip,cidr){const parts=String(cidr).split('/');if(parts.length!==2)return false;const prefix=Number(parts[1]);if(!Number.isInteger(prefix)||prefix<0||prefix>32)return false;try{const addr=ipv4ToInt(parts[0]);const value=ipv4ToInt(ip);const divisor=2**(32-prefix);return Math.floor(addr/divisor)===Math.floor(value/divisor)}catch(e){return false}}
+function portMatches(value,port){if(typeof value==='number')return value===port;const v=String(value);if(/^\\d+$/.test(v))return Number(v)===port;const m=v.match(/^(\\d+)-(\\d+)$/);return !!m&&port>=Number(m[1])&&port<=Number(m[2])}
+document.getElementById('probeRun').onclick=()=>{
+ const result=document.getElementById('probeResult');
+ try{
+  if(!lastReport)throw Error('Click Analyze rules before checking exposure.');
+  const ip=document.getElementById('probeIp').value.trim();ipv4ToInt(ip);
+  const port=Number(document.getElementById('probePort').value);if(!Number.isInteger(port)||port<1||port>65535)throw Error('Port must be between 1 and 65535.');
+  const rules=JSON.parse(textarea.value);
+  const matching=rules.filter(r=>r&&typeof r==='object'&&String(r.action).toLowerCase()==='allow'&&String(r.protocol).toLowerCase()==='tcp'&&matchesCidr(ip,r.source)&&portMatches(r.port,port));
+  result.className='message '+(matching.length?'error':'success');
+  result.textContent=matching.length?'Potential exposure: '+matching.length+' matching ALLOW rule(s): '+matching.map(r=>r.id||'(unnamed)').join(', ')+'. This is a rule-level match, not proof of network reachability.':'No matching TCP ALLOW rule found in the submitted sample. This does not prove the service is inaccessible.';
+ }catch(e){result.className='message error';result.textContent=e.message}
 };
 document.getElementById('download').onclick=()=>{
  if(!lastReport){setMessage('Run an analysis first, then export the report.','error');return}
