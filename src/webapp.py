@@ -1,5 +1,6 @@
 """Local browser dashboard for the Cloud Firewall Rule Analyzer."""
 import json
+from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
@@ -82,6 +83,11 @@ textarea{width:100%;min-height:230px;resize:vertical;display:block;border:1px so
  <div class="head"><div class="step">03</div><div><h2>Findings & recommendations</h2><p class="sub">Review each flagged rule, supporting evidence, and suggested next step.</p></div></div>
  <div class="filters"><input id="findingSearch" type="search" placeholder="Search rule ID, issue, or evidence…" aria-label="Search findings"><select id="severityFilter" aria-label="Filter findings by severity"><option value="ALL">All severities</option><option value="HIGH">High risk</option><option value="MEDIUM">Medium risk</option><option value="INFO">Informational</option></select><span id="resultCount" class="filtercount">0 findings</span></div><div class="tablewrap"><table><thead><tr><th>Severity</th><th>Score</th><th>Rule ID</th><th>Finding</th><th>Evidence</th><th>Recommendation</th></tr></thead><tbody id="findingRows"><tr><td colspan="6" class="empty">No analysis run yet. Analyze the sample to see findings.</td></tr></tbody></table></div>
 </section>
+<section class="card full" id="violatedRules">
+ <div class="head"><div class="step">03A</div><div><h2>Rules flagged by analyzer</h2><p class="sub">Complete input rules that produced one or more security findings. A flagged rule is a potential risk, not proof of a successful attack.</p></div></div>
+ <div class="tablewrap"><table><thead><tr><th>Rule ID</th><th>Source</th><th>Protocol</th><th>Port</th><th>Action</th><th>Flagged issue(s)</th></tr></thead><tbody id="violatingRows"><tr><td colspan="6" class="empty">Run an analysis to see which rules were flagged.</td></tr></tbody></table></div>
+ <p id="violatingCount" class="message">No analysis run yet.</p>
+</section>
 <section class="card full" id="riskDistribution"><div class="head"><div class="step">05</div><div><h2>Risk distribution</h2><p class="sub">Visual breakdown of findings by severity for the current sample.</p></div></div><div id="riskBars" class="riskbars"><div class="empty">Run an analysis to view the risk breakdown.</div></div></section>
 <section class="card full" id="exposureCheck"><div class="head"><div class="step">06</div><div><h2>Firewall exposure explorer</h2><p class="sub">Inspect which input rules allow a selected TCP port from a selected IPv4 address. Educational rule matching only; this does not simulate routing, rule priority, or cloud-provider behavior.</p></div></div><div class="filters"><input id="probeIp" aria-label="Source IPv4 address" placeholder="Source IPv4 (e.g. 8.8.8.8)" value="8.8.8.8"><input id="probePort" aria-label="Destination TCP port" type="number" min="1" max="65535" value="22"><button class="btn primary" id="probeRun">Check exposure</button></div><div id="probeResult" class="message">Run an analysis, then test an IP address and port.</div></section>
 <section class="card full" id="comparison">
@@ -101,7 +107,7 @@ textarea{width:100%;min-height:230px;resize:vertical;display:block;border:1px so
 const textarea=document.getElementById('rules');
 const initial=textarea.value;
 const presets={
-risky:initial,
+risky:null,
 safe:JSON.stringify([
  {"id":"SAFE-001","source":"10.10.0.0/16","protocol":"tcp","port":22,"action":"allow"},
  {"id":"SAFE-002","source":"0.0.0.0/0","protocol":"tcp","port":443,"action":"allow"},
@@ -133,10 +139,21 @@ document.getElementById('clearBaseline').onclick=()=>{
 
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function setMessage(text,kind=''){const m=document.getElementById('message');m.className='message '+kind;m.textContent=text}
-function choosePreset(name){textarea.value=presets[name];document.querySelectorAll('[data-preset]').forEach(b=>b.classList.toggle('selected',b.dataset.preset===name));setMessage('Loaded '+name+' demo scenario. Click Analyze rules to run it.')}
-document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>choosePreset(b.dataset.preset)));
-document.getElementById('restore').onclick=()=>{choosePreset('risky');setMessage('Default sample restored. Click Analyze rules to run it.')};
-document.getElementById('resetTop').onclick=()=>{choosePreset('risky');lastReport=null;setMessage('Demo reset. Ready for a new analysis.')};
+async function choosePreset(name){
+ if(name==='risky'){
+  const response=await fetch('/sample-rules');
+  if(!response.ok)throw Error('Could not load data/sample_rules.json');
+  const rules=await response.json();
+  if(!Array.isArray(rules))throw Error('The sample rules file must contain a JSON list.');
+  textarea.value=JSON.stringify(rules,null,2);
+ }else{textarea.value=presets[name]}
+ document.querySelectorAll('[data-preset]').forEach(b=>b.classList.toggle('selected',b.dataset.preset===name));
+ setMessage('Loaded '+name+' demo scenario'+(name==='risky'?' ('+JSON.parse(textarea.value).length+' rules)':'')+'. Click Analyze rules to run it.');
+}
+document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>choosePreset(b.dataset.preset).catch(e=>setMessage(e.message,'error'))));
+choosePreset('risky').catch(e=>setMessage(e.message,'error'));
+document.getElementById('restore').onclick=()=>{choosePreset('risky').then(()=>setMessage('Default 17-rule sample restored. Click Analyze rules to run it.')).catch(e=>setMessage(e.message,'error'))};
+document.getElementById('resetTop').onclick=()=>{lastReport=null;choosePreset('risky').then(()=>setMessage('Demo reset with the 17-rule sample. Ready for a new analysis.')).catch(e=>setMessage(e.message,'error'))};
 document.getElementById('runTop').onclick=()=>document.getElementById('analyze').click();
 document.getElementById('analyze').onclick=async()=>{
  try{
@@ -149,6 +166,7 @@ document.getElementById('analyze').onclick=async()=>{
   const items=[['Total rules',s.total_rules,''],['Valid rules',s.valid_rules,'safe'],['Invalid rules',s.invalid_rules,s.invalid_rules?'risk':''],['Findings',s.findings,''],['High risk',s.high,'risk'],['Medium risk',s.medium,'warn']];
   document.getElementById('stats').innerHTML=items.map((x,i)=>'<div class="stat '+x[2]+'"><div class="statlabel"><i class="dot" style="background:'+(i===4?'var(--red)':i===5?'var(--amber)':i===1?'var(--green)':'var(--blue)')+'"></i>'+esc(x[0])+'</div><b>'+esc(x[1])+'</b></div>').join('');
   renderFindings();
+  renderViolatingRules(rules,data.findings);
   const riskLevels=[{name:'High risk',key:'HIGH',cls:'high'},{name:'Medium risk',key:'MEDIUM',cls:'medium'},{name:'Informational',key:'INFO',cls:'info'}];
   const riskCounts=riskLevels.map(x=>({...x,count:data.findings.filter(f=>f.severity===x.key).length}));
   const maxRisk=Math.max(1,...riskCounts.map(x=>x.count));
@@ -173,6 +191,26 @@ function renderFindings(){
  });
  document.getElementById('resultCount').textContent=rows.length+' of '+lastReport.findings.length+' findings';
  document.getElementById('findingRows').innerHTML=rows.length?rows.map(f=>'<tr><td><span class="severity '+esc(f.severity)+'">'+esc(f.severity)+'</span></td><td class="score">'+esc(f.risk_score)+'</td><td>'+esc(f.rule_id)+'</td><td>'+esc(f.title)+'</td><td>'+esc(f.evidence)+'</td><td>'+esc(f.recommendation)+'</td></tr>').join(''):'<tr><td colspan="6" class="empty">No findings match the current search or severity filter.</td></tr>';
+}
+function renderViolatingRules(rules,findings){
+ const grouped=new Map();
+ findings.forEach(f=>{
+  if(!grouped.has(f.rule_id))grouped.set(f.rule_id,[]);
+  grouped.get(f.rule_id).push(f);
+ });
+ const flagged=[...grouped.entries()];
+ const body=document.getElementById('violatingRows');
+ document.getElementById('violatingCount').textContent=flagged.length+' distinct rule(s) flagged from '+rules.length+' submitted rule(s).';
+ if(!flagged.length){
+  body.innerHTML='<tr><td colspan="6" class="empty">No rules were flagged by the current predefined checks.</td></tr>';
+  return;
+ }
+ const byId=new Map(rules.filter(r=>r&&typeof r==='object').map(r=>[r.id,r]));
+ body.innerHTML=flagged.map(([id,items])=>{
+  const rule=byId.get(id)||{};
+  const issues=items.map(f=>'<div><span class="severity '+esc(f.severity)+'">'+esc(f.severity)+'</span> '+esc(f.title)+'</div>').join('');
+  return '<tr><td><b>'+esc(id)+'</b></td><td>'+esc(rule.source||'—')+'</td><td>'+esc(rule.protocol||'—')+'</td><td>'+esc(rule.port??'—')+'</td><td>'+esc(rule.action||'—')+'</td><td>'+issues+'</td></tr>';
+ }).join('');
 }
 document.getElementById('findingSearch').addEventListener('input',renderFindings);
 document.getElementById('severityFilter').addEventListener('change',renderFindings);
@@ -233,6 +271,12 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
         if path == "/":
             self.send_body(200, PAGE, "text/html; charset=utf-8")
+        elif path == "/sample-rules":
+            sample_path = Path(__file__).resolve().parent.parent / "data" / "sample_rules.json"
+            try:
+                self.send_body(200, sample_path.read_text(encoding="utf-8"), "application/json; charset=utf-8")
+            except OSError as exc:
+                self.send_body(500, json.dumps({"error": f"Could not load sample rules: {exc}"}), "application/json; charset=utf-8")
         elif path == "/health":
             self.send_body(200, '{"status":"ok"}', "application/json; charset=utf-8")
         else:
