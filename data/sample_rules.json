@@ -38,5 +38,101 @@
     "port": "8000-8100",
     "action": "allow",
     "description": "Example internal application range"
+  },
+  {
+    "id": "FW-006",
+    "source": "0.0.0.0/0",
+    "protocol": "tcp",
+    "port": 3389,
+    "action": "allow",
+    "description": "Public RDP remote desktop"
+  },
+  {
+    "id": "FW-007",
+    "source": "0.0.0.0/0",
+    "protocol": "tcp",
+    "port": 3306,
+    "action": "allow",
+    "description": "Public MySQL database"
+  },
+  {
+    "id": "FW-008",
+    "source": "0.0.0.0/0",
+    "protocol": "tcp",
+    "port": 6379,
+    "action": "allow",
+    "description": "Public Redis service"
+  },
+  {
+    "id": "FW-009",
+    "source": "0.0.0.0/0",
+    "protocol": "tcp",
+    "port": 1433,
+    "action": "allow",
+    "description": "Public Microsoft SQL Server"
+  },
+  {
+    "id": "FW-010",
+    "source": "0.0.0.0/0",
+    "protocol": "all",
+    "port": "1-65535",
+    "action": "allow",
+    "description": "All protocols and broad port range from anywhere"
+  },
+  {
+    "id": "FW-011",
+    "source": "0.0.0.0/0",
+    "protocol": "udp",
+    "port": "1000-3000",
+    "action": "allow",
+    "description": "Public UDP range"
+  },
+  {
+    "id": "FW-012",
+    "source": "192.168.1.25/32",
+    "protocol": "tcp",
+    "port": 22,
+    "action": "allow",
+    "description": "SSH from one specified IPv4 address"
+  },
+  {
+    "id": "FW-013",
+    "source": "0.0.0.0/0",
+    "protocol": "tcp",
+    "port": 80,
+    "action": "allow",
+    "description": "Public HTTP website traffic"
+  },
+  {
+    "id": "FW-014",
+    "source": "0.0.0.0/0",
+    "protocol": "tcp",
+    "port": 5432,
+    "action": "deny",
+    "description": "Public PostgreSQL traffic explicitly denied"
+  },
+  {
+    "id": "FW-015",
+    "source": "10.0.0.0/8",
+    "protocol": "tcp",
+    "port": 3306,
+    "action": "allow",
+    "description": "MySQL access from private network range"
+  },
+  {
+    "id": "FW-016",
+    "source": "0.0.0.0/0",
+    "protocol": "tcp",
+    "port": "2000-5000",
+    "action": "allow",
+    "description": "Large public TCP port range"
+  },
+  {
+    "id": "FW-017",
+    "source": "198.51.100.20/32",
+    "protocol": "tcp",
+    "port": 3389,
+    "action": "allow",
+    "description": "RDP from one example source address"
   }
 ]
