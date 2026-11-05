@@ -134,5 +134,53 @@
     "port": 3389,
     "action": "allow",
     "description": "RDP from one example source address"
+  },
+  {
+    "id": "FW-018",
+    "source": "0.0.0.0/0",
+    "protocol": "tcp",
+    "port": 22,
+    "action": "allow",
+    "description": "Duplicate of FW-001: demonstrates redundant allow-rule detection"
+  },
+  {
+    "id": "FW-019",
+    "source": "0.0.0.0/0",
+    "protocol": "tcp",
+    "port": "22-3306",
+    "action": "allow",
+    "description": "Public range includes SSH and MySQL sensitive service ports"
+  },
+  {
+    "id": "FW-020",
+    "source": "10.20.0.0/16",
+    "protocol": "tcp",
+    "port": "10000-12050",
+    "action": "allow",
+    "description": "Large internal TCP port range for review"
+  },
+  {
+    "id": "FW-021",
+    "source": "0.0.0.0/0",
+    "protocol": "tcp",
+    "port": 8080,
+    "action": "allow",
+    "description": "Public custom application port"
+  },
+  {
+    "id": "FW-022",
+    "source": "0.0.0.0/0",
+    "protocol": "udp",
+    "port": "1000-2500",
+    "action": "allow",
+    "description": "Broad public UDP port range"
+  },
+  {
+    "id": "FW-023",
+    "source": "0.0.0.0/0",
+    "protocol": "tcp",
+    "port": "8000-9500",
+    "action": "allow",
+    "description": "Large public application port range"
   }
 ]
